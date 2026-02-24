@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instagram Post Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <p class="eyebrow">Instagram Workflow</p>
+        <h1>Plan polished posts from your shared cloud folders.</h1>
+        <p class="subtitle">
+          Connect your synced iCloud and Google Drive directories, draft captions,
+          schedule dates, and keep a clean publishing queue.
+        </p>
+      </header>
+
+      <section class="panel connector-panel">
+        <div class="panel-title-row">
+          <h2>Source folders</h2>
+          <button id="refresh-btn" class="ghost">Refresh images</button>
+        </div>
+        <div class="connectors">
+          <button id="connect-icloud" class="btn">Connect iCloud folder</button>
+          <button id="connect-gdrive" class="btn">Connect Google Drive folder</button>
+          <button id="load-nextcloud" class="ghost">Load Nextcloud samples</button>
+          <button id="clear-folders" class="ghost">Forget folders</button>
+          <input
+            id="icloud-input"
+            type="file"
+            webkitdirectory
+            directory
+            multiple
+            hidden
+          />
+          <input
+            id="gdrive-input"
+            type="file"
+            webkitdirectory
+            directory
+            multiple
+            hidden
+          />
+        </div>
+        <p id="folder-status" class="status">No folders connected.</p>
+      </section>
+
+      <section class="workspace-grid">
+        <div class="panel gallery-panel">
+          <div class="panel-title-row">
+            <h2>Image library</h2>
+            <p id="image-count" class="meta">0 images</p>
+          </div>
+          <div id="gallery" class="gallery"></div>
+        </div>
+
+        <div class="panel editor-panel">
+          <div class="panel-title-row">
+            <h2>Post details</h2>
+            <p id="selected-file" class="meta">No image selected</p>
+          </div>
+          <div class="selected-preview-wrap">
+            <img id="selected-preview" class="selected-preview" alt="Selected post preview" />
+          </div>
+
+          <form id="post-form">
+            <label>
+              Caption
+              <textarea id="caption" rows="5" placeholder="Write your caption..."></textarea>
+            </label>
+
+            <label>
+              Hashtags
+              <input id="hashtags" type="text" placeholder="#travel #design #lifestyle" />
+            </label>
+
+            <label>
+              Scheduled publish date
+              <input id="scheduled-at" type="datetime-local" />
+            </label>
+
+            <section class="ai-box">
+              <p class="meta">
+                AI helper: uses the selected photo to suggest copy.
+              </p>
+              <div class="form-actions">
+                <button id="auto-random-btn" type="button" class="btn">
+                  Auto randomize
+                </button>
+                <button id="suggest-caption-btn" type="button" class="ghost">
+                  Suggest caption
+                </button>
+                <button id="suggest-tags-btn" type="button" class="ghost">
+                  Suggest hashtags
+                </button>
+              </div>
+              <p id="ai-status" class="status"></p>
+            </section>
+
+            <div class="form-actions">
+              <button type="submit" class="btn">Save plan</button>
+              <button id="new-plan-btn" type="button" class="ghost">Clear form</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="panel queue-panel">
+        <div class="panel-title-row">
+          <h2>Publishing queue</h2>
+          <div class="queue-actions">
+            <button id="export-btn" class="ghost">Export JSON</button>
+            <label class="ghost file-label">
+              Import JSON
+              <input id="import-input" type="file" accept="application/json" hidden />
+            </label>
+          </div>
+        </div>
+        <div id="queue" class="queue"></div>
+      </section>
+    </main>
+
+    <template id="queue-item-template">
+      <article class="queue-item">
+        <img class="queue-thumb" alt="Scheduled post image" />
+        <div class="queue-copy">
+          <p class="queue-date"></p>
+          <p class="queue-caption"></p>
+          <p class="queue-tags"></p>
+        </div>
+        <button class="danger">Delete</button>
+      </article>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
