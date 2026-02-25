@@ -239,9 +239,16 @@ input:focus {
 }
 
 .queue-date,
+.queue-image,
 .queue-caption,
 .queue-tags {
   margin: 0;
+}
+
+.queue-image {
+  font-size: 0.82rem;
+  color: var(--muted);
+  word-break: break-word;
 }
 
 .queue-date {
@@ -258,6 +265,16 @@ input:focus {
   font-size: 0.9rem;
   color: var(--muted);
   margin-top: 0.2rem;
+}
+
+.queue-item-actions {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: end;
+}
+
+.queue-copy-btn {
+  white-space: nowrap;
 }
 
 .file-label {

@@ -3,8 +3,8 @@ const SUGGEST_ENDPOINT = "/api/suggest";
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic"];
 
 const state = {
-  handles: {},
-  files: {},
+  handles: [],
+  files: [],
   remoteImages: {},
   nextcloudLoading: false,
   folderNotice: "",
@@ -14,12 +14,10 @@ const state = {
 };
 
 const els = {
-  connectIcloud: document.querySelector("#connect-icloud"),
-  connectGdrive: document.querySelector("#connect-gdrive"),
+  connectLocal: document.querySelector("#connect-local"),
   loadNextcloud: document.querySelector("#load-nextcloud"),
   clearFolders: document.querySelector("#clear-folders"),
-  iCloudInput: document.querySelector("#icloud-input"),
-  gDriveInput: document.querySelector("#gdrive-input"),
+  localInput: document.querySelector("#local-input"),
   refreshBtn: document.querySelector("#refresh-btn"),
   folderStatus: document.querySelector("#folder-status"),
   imageCount: document.querySelector("#image-count"),
@@ -37,6 +35,7 @@ const els = {
   newPlanBtn: document.querySelector("#new-plan-btn"),
   queue: document.querySelector("#queue"),
   queueTemplate: document.querySelector("#queue-item-template"),
+  copyJsonBtn: document.querySelector("#copy-json-btn"),
   exportBtn: document.querySelector("#export-btn"),
   importInput: document.querySelector("#import-input"),
 };
@@ -50,33 +49,30 @@ function init() {
 }
 
 function wireEvents() {
-  els.connectIcloud.addEventListener("click", () => connectFolder("icloud"));
-  els.connectGdrive.addEventListener("click", () => connectFolder("gdrive"));
+  els.connectLocal.addEventListener("click", connectLocalFolder);
   els.loadNextcloud.addEventListener("click", loadNextcloudSamples);
   els.clearFolders.addEventListener("click", clearFolders);
-  els.iCloudInput.addEventListener("change", (event) => onFolderFilesSelected("icloud", event));
-  els.gDriveInput.addEventListener("change", (event) => onFolderFilesSelected("gdrive", event));
+  els.localInput.addEventListener("change", onLocalFolderSelected);
   els.refreshBtn.addEventListener("click", refreshImages);
   els.postForm.addEventListener("submit", onSavePlan);
   els.autoRandomBtn.addEventListener("click", autoRandomize);
   els.suggestCaptionBtn.addEventListener("click", () => suggestCopy("caption"));
   els.suggestTagsBtn.addEventListener("click", () => suggestCopy("hashtags"));
   els.newPlanBtn.addEventListener("click", clearForm);
+  els.copyJsonBtn.addEventListener("click", copyAllPlansJson);
   els.exportBtn.addEventListener("click", exportPlans);
   els.importInput.addEventListener("change", importPlans);
 }
 
-async function connectFolder(sourceKey) {
+async function connectLocalFolder() {
   if (!window.showDirectoryPicker) {
-    const picker = sourceKey === "icloud" ? els.iCloudInput : els.gDriveInput;
-    picker.click();
+    els.localInput.click();
     return;
   }
 
   try {
     const handle = await window.showDirectoryPicker({ mode: "read" });
-    state.handles[sourceKey] = handle;
-    state.files[sourceKey] = [];
+    state.handles.push(handle);
     await refreshImages();
   } catch (err) {
     if (err && err.name === "AbortError") return;
@@ -87,13 +83,13 @@ async function connectFolder(sourceKey) {
 
 function clearFolders() {
   revokeImageUrls(state.images);
-  state.handles = {};
-  state.files = {};
+  state.handles = [];
+  state.files = [];
   state.remoteImages = {};
+  state.folderNotice = "";
   state.images = [];
   state.selectedImageId = null;
-  els.iCloudInput.value = "";
-  els.gDriveInput.value = "";
+  els.localInput.value = "";
   renderAll();
 }
 
@@ -101,14 +97,15 @@ async function refreshImages() {
   const nextImages = [];
   revokeImageUrls(state.images);
 
-  for (const [source, handle] of Object.entries(state.handles)) {
+  for (let index = 0; index < state.handles.length; index += 1) {
+    const handle = state.handles[index];
     if (!handle) continue;
-    await collectImagesFromHandle(handle, source, nextImages);
+    const rootName = handle.name || `folder-${index + 1}`;
+    await collectImagesFromHandle(handle, "local", nextImages, rootName);
   }
 
-  for (const [source, files] of Object.entries(state.files)) {
-    if (!files?.length) continue;
-    collectImagesFromFileList(files, source, nextImages);
+  if (state.files.length) {
+    collectImagesFromFileList(state.files, "local", nextImages);
   }
 
   for (const images of Object.values(state.remoteImages)) {
@@ -174,10 +171,9 @@ async function loadNextcloudSamples() {
   }
 }
 
-async function onFolderFilesSelected(sourceKey, event) {
+async function onLocalFolderSelected(event) {
   const files = Array.from(event.target.files || []);
-  state.files[sourceKey] = files;
-  state.handles[sourceKey] = null;
+  state.files.push(...files);
   await refreshImages();
 }
 
@@ -431,10 +427,8 @@ function renderAll() {
 
 function renderFolderStatus() {
   const labels = [];
-  if (state.handles.icloud) labels.push("iCloud connected");
-  if (state.files.icloud?.length) labels.push("iCloud loaded from disk");
-  if (state.handles.gdrive) labels.push("Google Drive connected");
-  if (state.files.gdrive?.length) labels.push("Google Drive loaded from disk");
+  if (state.handles.length) labels.push(`Local folders connected: ${state.handles.length}`);
+  if (state.files.length) labels.push("Local folders loaded from disk");
   if (state.remoteImages.nextcloud?.length) labels.push("Nextcloud samples loaded");
 
   let baseText = "";
@@ -510,19 +504,30 @@ function renderQueue() {
     const image = state.images.find((i) => i.id === plan.imageId);
     const frag = els.queueTemplate.content.cloneNode(true);
 
+    const imageMeta = frag.querySelector(".queue-image");
     const thumb = frag.querySelector(".queue-thumb");
     const date = frag.querySelector(".queue-date");
     const caption = frag.querySelector(".queue-caption");
     const tags = frag.querySelector(".queue-tags");
+    const copyBtn = frag.querySelector(".queue-copy-btn");
     const deleteBtn = frag.querySelector(".danger");
 
     thumb.src = image?.objectUrl || "";
     thumb.alt = image?.name || "Image unavailable";
+    imageMeta.textContent = image
+      ? `${image.source.toUpperCase()} / ${image.path}`
+      : `Image missing / ${plan.imageId}`;
     date.textContent = plan.scheduledAt
       ? `Scheduled: ${formatDate(plan.scheduledAt)}`
       : "Scheduled: not set";
     caption.textContent = plan.caption || "(No caption)";
     tags.textContent = plan.hashtags || "";
+
+    copyBtn.addEventListener("click", async () => {
+      const itemPayload = buildPlanPayload(plan, image);
+      const copied = await copyTextToClipboard(JSON.stringify(itemPayload, null, 2));
+      setAiStatus(copied ? "Copied plan JSON." : "Could not copy plan JSON.");
+    });
 
     deleteBtn.addEventListener("click", () => {
       state.plans = state.plans.filter((p) => p.imageId !== plan.imageId);
@@ -554,6 +559,39 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ plans: state.plans }));
+}
+
+function buildPlanPayload(plan, image) {
+  return {
+    imageId: plan.imageId,
+    source: image?.source || null,
+    imageName: image?.name || null,
+    imagePath: image?.path || null,
+    caption: plan.caption || "",
+    hashtags: plan.hashtags || "",
+    scheduledAt: plan.scheduledAt || null,
+    updatedAt: plan.updatedAt || null,
+  };
+}
+
+async function copyAllPlansJson() {
+  const payload = {
+    plans: state.plans.map((plan) => {
+      const image = state.images.find((i) => i.id === plan.imageId);
+      return buildPlanPayload(plan, image);
+    }),
+  };
+  const copied = await copyTextToClipboard(JSON.stringify(payload, null, 2));
+  setAiStatus(copied ? "Copied queue JSON." : "Could not copy queue JSON.");
+}
+
+async function copyTextToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function exportPlans() {

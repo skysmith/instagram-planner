@@ -29,20 +29,11 @@
           <button id="refresh-btn" class="ghost">Refresh images</button>
         </div>
         <div class="connectors">
-          <button id="connect-icloud" class="btn">Connect iCloud folder</button>
-          <button id="connect-gdrive" class="btn">Connect Google Drive folder</button>
-          <button id="load-nextcloud" class="ghost">Load Nextcloud samples</button>
+          <button id="connect-local" class="btn">Connect local folder</button>
+          <button id="load-nextcloud" class="btn">Load Nextcloud samples</button>
           <button id="clear-folders" class="ghost">Forget folders</button>
           <input
-            id="icloud-input"
-            type="file"
-            webkitdirectory
-            directory
-            multiple
-            hidden
-          />
-          <input
-            id="gdrive-input"
+            id="local-input"
             type="file"
             webkitdirectory
             directory
@@ -117,6 +108,7 @@
         <div class="panel-title-row">
           <h2>Publishing queue</h2>
           <div class="queue-actions">
+            <button id="copy-json-btn" class="ghost">Copy JSON</button>
             <button id="export-btn" class="ghost">Export JSON</button>
             <label class="ghost file-label">
               Import JSON
@@ -132,11 +124,15 @@
       <article class="queue-item">
         <img class="queue-thumb" alt="Scheduled post image" />
         <div class="queue-copy">
+          <p class="queue-image"></p>
           <p class="queue-date"></p>
           <p class="queue-caption"></p>
           <p class="queue-tags"></p>
         </div>
-        <button class="danger">Delete</button>
+        <div class="queue-item-actions">
+          <button class="ghost queue-copy-btn">Copy JSON</button>
+          <button class="danger">Delete</button>
+        </div>
       </article>
     </template>
 
